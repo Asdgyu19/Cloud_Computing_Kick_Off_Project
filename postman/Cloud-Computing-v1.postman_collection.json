@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "Cloud Computing Project v1",
+    "description": "API Testing Collection untuk Presensi QR, Accelerometer, dan GPS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Presensi QR",
+      "item": [
+        {
+          "name": "Generate QR Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": \"cloud-101\",\n  \"session_id\": \"sesi-02\",\n  \"ts\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/presence/qr/generate",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "presence",
+                "qr",
+                "generate"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": \"cloud-101\",\n  \"session_id\": \"sesi-02\",\n  \"ts\": \"2026-02-18T10:00:00Z\"\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"ok\": true,\n  \"data\": {\n    \"qr_token\": \"TKN-8F2A19\",\n    \"expires_at\": \"2026-02-18T10:02:00Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"2023001\",\n  \"device_id\": \"dev-001\",\n  \"course_id\": \"cloud-101\",\n  \"session_id\": \"sesi-02\",\n  \"qr_token\": \"TKN-8F2A19\",\n  \"ts\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/presence/checkin",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "presence",
+                "checkin"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cek Status Presensi",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/presence/status?user_id=2023001&course_id=cloud-101&session_id=sesi-02",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "presence",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "2023001"
+                },
+                {
+                  "key": "course_id",
+                  "value": "cloud-101"
+                },
+                {
+                  "key": "session_id",
+                  "value": "sesi-02"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Accelerometer",
+      "item": [
+        {
+          "name": "Kirim Data Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": \"dev-001\",\n  \"ts\": \"{{$isoTimestamp}}\",\n  \"samples\": [\n    {\n      \"t\": \"2026-02-18T10:15:29.100Z\",\n      \"x\": 0.12,\n      \"y\": 0.01,\n      \"z\": 9.70\n    },\n    {\n      \"t\": \"2026-02-18T10:15:29.300Z\",\n      \"x\": 0.15,\n      \"y\": 0.02,\n      \"z\": 9.68\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/telemetry/accel",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "telemetry",
+                "accel"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ambil Data Terbaru",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/telemetry/accel/latest?device_id=dev-001",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "telemetry",
+                "accel",
+                "latest"
+              ],
+              "query": [
+                {
+                  "key": "device_id",
+                  "value": "dev-001"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. GPS Tracking",
+      "item": [
+        {
+          "name": "Log GPS Point",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_id\": \"dev-001\",\n  \"ts\": \"{{$isoTimestamp}}\",\n  \"lat\": -7.2575,\n  \"lng\": 112.7521,\n  \"accuracy_m\": 12.5\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/telemetry/gps",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "telemetry",
+                "gps"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ambil GPS Terbaru (Marker)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/telemetry/gps/latest?device_id=dev-001",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "telemetry",
+                "gps",
+                "latest"
+              ],
+              "query": [
+                {
+                  "key": "device_id",
+                  "value": "dev-001"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ambil GPS History (Polyline)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/telemetry/gps/history?device_id=dev-001&limit=200",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "telemetry",
+                "gps",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "device_id",
+                  "value": "dev-001"
+                },
+                {
+                  "key": "limit",
+                  "value": "200"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec",
+      "type": "string"
+    }
+  ]
+}
