@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile QR Scanner - Presensi</title>
+    <script async src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family:Inter,system-ui,sans-serif;
+            background:#f8fafc;
+            height:100vh;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .header {
+            background: #ffffff;
+            color: rgb(0, 0, 0);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .scanner-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scanner-frame {
+            position: absolute;
+            width: 80%;
+            aspect-ratio: 1;
+            border: 3px solid #2563eb;
+            border: 3px solid #2563eb;
+            box-shadow: 0 0 25px rgba(37,99,235,0.5);
+            pointer-events: none;
+        }
+
+        .corner {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border: 3px solid #2563eb;
+        }
+
+        .corner-tl {
+            top: -3px;
+            left: -3px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-tr {
+            top: -3px;
+            right: -3px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-bl {
+            bottom: -3px;
+            left: -3px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-br {
+            bottom: -3px;
+            right: -3px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            left: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(6px);
+            color: #111;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+
+        .user-info label {
+            display: block;
+            margin-bottom: 5px;
+            opacity: 0.8;
+            font-size: 0.85em;
+        }
+
+        .user-info input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #2563eb;
+            border-radius: 4px;
+            background: white;
+            color: #111;
+            border: 1px solid #2563eb;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .user-info input::placeholder {
+            color: #999;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 40%, rgba(255,255,255,0.2) 100%);
+            pointer-events: none;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .status-bar {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 15px;
+            text-align: center;
+            font-size: 0.9em;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-bar.scanning {
+            color: #2563eb;
+        }
+
+        .status-bar.success {
+            background: #2d5016;
+            color: #51cf66;
+        }
+
+        .status-bar.error {
+            background: #5c1a1a;
+            color: #ff6b6b;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 90%;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .modal-icon.success {
+            animation: bounce 0.6s ease-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .modal-title {
+            font-size: 1.6em;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .modal-message {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1em;
+        }
+
+        .modal-message input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: Inter, system-ui, sans-serif;
+        }
+
+        .modal-message input:focus {
+            outline: none;
+            border-color: #000000;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .modal-data {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .modal-data div {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .modal-data strong {
+            color: #2563eb;
+        }
+
+        .modal-button {
+            background: #2563eb;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+
+        .modal-button:active {
+            transform: scale(0.98);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #2563eb;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.2em;
+            }
+
+            .user-info {
+                font-size: 0.8em;
+            }
+
+            .user-info input {
+                padding: 6px;
+                font-size: 0.8em;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .modal-title {
+                font-size: 1.3em;
+            }
+
+            .modal-icon {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="logo.png"
+            alt="Logo Universitas Airlangga"
+            style="height:36px; vertical-align:middle; margin-right:8px;">
+        Universitas Airlangga - Presensi QR Mobile
+        <button onclick="showSettings()" style="position: absolute; top: 15px; right: 15px; background:#2563eb; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+            ID
+        </button>
+    </div>
+
+    <div class="scanner-container">
+        <video id="video" autoplay></video>
+        <canvas id="canvas"></canvas>
+
+        <div class="user-info">
+            <label>User ID:</label>
+            <input type="text" id="userId" placeholder="Enter your ID">
+            <label>Device ID:</label>
+            <input type="text" id="deviceId" placeholder="auto-generate" disabled>
+        </div>
+
+        <div class="scanner-frame">
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+        </div>
+
+        <div class="overlay"></div>
+    </div>
+
+    <div class="status-bar scanning" id="statusBar">
+        Mempersiapkan scanner... <span class="loading"></span>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content">
+            <div class="modal-icon success">✅</div>
+            <div class="modal-title">Presensi Berhasil!</div>
+            <div class="modal-message">Data Anda telah tercatat di sistem</div>
+            <div class="modal-data" id="modalData"></div>
+            <button class="modal-button" onclick="resetScanner()">Scan Berikutnya</button>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal" id="errorModal">
+        <div class="modal-content">
+            <div class="modal-icon" style="font-size: 4em;">❌</div>
+            <div class="modal-title">Presensi Gagal</div>
+            <div class="modal-message" id="errorMessage"></div>
+            <button class="modal-button" onclick="closeErrorModal()">Coba Lagi</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-title">Setting</div>
+            <div class="modal-message" style="text-align: left; margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; color: #666;">
+                    <input type="text" id="deploymentIdInput" placeholder="Deployment ID" style="width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                </label>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="modal-button" onclick="saveDeploymentId()" style="background: #2563eb;">Simpan</button>
+                <button class="modal-button" onclick="closeSettings()" style="background: #999;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        let API_BASE = null;
+        let scanning = true;
+        let canvasContext = null;
+        let locationData = null;
+        let accelData = null;
+
+        // Get Deployment ID from URL or localStorage
+        function initDeploymentId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id') || localStorage.getItem('deploymentId');
+            
+            if (id) {
+                API_BASE = `https://script.google.com/macros/s/${id}/exec`;
+                localStorage.setItem('deploymentId', id);
+                console.log('✓ Deployment ID loaded:', id.substring(0, 20) + '...');
+            } else {
+                const errorMsg = 'Deployment ID tidak ditemukan!\n\nGunakan: https://mobile-scan-qr.vercel.app?id=YOUR_DEPLOYMENT_ID';
+                updateStatus(errorMsg);
+                console.error(errorMsg);
+                setTimeout(() => {
+                    alert(errorMsg);
+                }, 500);
+            }
+        }
+
+        // Generate Device ID
+        function generateDeviceId() {
+            const id = 'dev-' + Date.now().toString().slice(-8);
+            document.getElementById('deviceId').value = id;
+            return id;
+        }
+
+        // Get GPS Location dengan timeout
+        async function getLocation() {
+            return new Promise((resolve) => {
+                if (navigator.geolocation) {
+                    const timeout = setTimeout(() => {
+                        console.warn('⚠️ Geolocation timeout, menggunakan default location');
+                        locationData = {
+                            lat: -7.2575,
+                            lng: 112.7521,
+                            accuracy_m: 0
+                        };
+                        resolve(true);
+                    }, 5000); // 5 detik timeout
+
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            clearTimeout(timeout);
+                            locationData = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude,
+                                accuracy_m: position.coords.accuracy
+                            };
+                            console.log('✓ GPS acquired:', locationData);
+                            resolve(true);
+                        },
+                        (error) => {
+                            clearTimeout(timeout);
+                            console.warn('⚠️ Geolocation error:', error.message);
+                            locationData = {
+                                lat: -7.2575,
+                                lng: 112.7521,
+                                accuracy_m: 0
+                            };
+                            resolve(true);
+                        }
+                    );
+                } else {
+                    resolve(true);
+                }
+            });
+        }
+
+        // Get Accelerometer Data
+        function startAccelMonitoring() {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', (event) => {
+                    accelData = {
+                        x: event.acceleration.x || 0,
+                        y: event.acceleration.y || 0,
+                        z: event.acceleration.z || 0
+                    };
+                });
+            }
+        }
+
+        // Initialize Camera
+        async function initCamera() {
+            try {
+                // Check if jsQR is loaded
+                if (typeof jsQR === 'undefined') {
+                    console.warn('Waiting...');
+                    setTimeout(initCamera, 500);
+                    return;
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+
+                // Setup canvas
+                const canvas = document.getElementById('canvas');
+                canvasContext = canvas.getContext('2d', { willReadFrequently: true });
+
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    scanQrCode();
+                };
+            } catch (error) {
+                alert('Tidak dapat mengakses kamera: ' + error.message);
+            }
+        }
+
+        // Scan QR Code
+        function scanQrCode() {
+            if (!scanning) return;
+
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+
+            // Jika jsQR belum loaded, tunggu
+            if (typeof jsQR === 'undefined') {
+                console.warn('Loading...');
+                updateStatus('Mempersiapkan scanner...');
+                setTimeout(scanQrCode, 1000);
+                return;
+            }
+
+            // Jika ini scanning pertama kali, show ready status
+            if (document.getElementById('statusBar').textContent.includes('Mempersiapkan')) {
+                updateStatus('Arahkan kamera ke QR Code...');
+            }
+
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                try {
+                    canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'dontInvert'
+                    });
+
+                    if (code) {
+                        console.log('✓ QR Detected:', code.data.substring(0, 20));
+                        scanning = false;
+                        handleQRScanned(code.data);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Scan error:', e);
+                }
+            }
+
+            requestAnimationFrame(scanQrCode);
+        }
+
+        // Handle QR Scanned
+        async function handleQRScanned(token) {
+            const userId = document.getElementById('userId').value.trim();
+
+            if (!userId) {
+                showError('Silakan isi User ID terlebih dahulu');
+                scanning = true;
+                scanQrCode();
+                return;
+            }
+
+            if (!API_BASE) {
+                showError('⚠️ Deployment ID tidak ditemukan!\n\nGunakan link dengan parameter:\nhttps://mobile-scan-qr.vercel.app?id=YOUR_DEPLOYMENT_ID');
+                scanning = true;
+                scanQrCode();
+                return;
+            }
+
+            updateStatus('⏳ Memproses data GPS...');
+
+            try {
+                // Get location
+                await getLocation();
+
+                const deviceId = document.getElementById('deviceId').value;
+                const now = new Date().toISOString();
+
+                // Prepare payload
+                const payload = {
+                    user_id: userId,
+                    device_id: deviceId,
+                    qr_token: token,
+                    course_id: 'cloud-101',
+                    session_id: 'session-01',
+                    ts: now,
+                    location: locationData,
+                    accelerometer: accelData || { x: 0, y: 0, z: 0 }
+                };
+
+                console.log('Sending payload:', payload);
+                updateStatus('Mengirim data...');
+
+                // Send to backend dengan timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
+
+                const response = await fetch(API_BASE + '?action=presence/checkin_mobile', {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                const data = await response.json();
+
+                console.log('Response:', data);
+
+                if (data.ok) {
+                    showSuccess(payload, token);
+                    updateStatus('✅ Presensi Berhasil!');
+                } else {
+                    showError('❌ ' + (data.error || 'Gagal check-in. Silakan coba lagi.'));
+                    scanning = true;
+                    scanQrCode();
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                
+                if (error.name === 'AbortError') {
+                    showError('⏱️ Timeout! Server tidak merespons. Cek Deployment ID dan coba lagi.');
+                } else {
+                    showError('❌ Error: ' + error.message);
+                }
+                
+                scanning = true;
+                scanQrCode();
+            }
+        }
+
+        // Show Success Modal
+        function showSuccess(payload, token) {
+            const modalData = document.getElementById('modalData');
+            modalData.innerHTML = `
+                <div><strong>User ID:</strong> ${payload.user_id}</div>
+                <div><strong>Status:</strong> HADIR</div>
+                <div><strong>Waktu:</strong> ${new Date().toLocaleString('id-ID')}</div>
+                <div><strong>Lokasi:</strong> ${payload.location.lat.toFixed(4)}, ${payload.location.lng.toFixed(4)}</div>
+                <div><strong>Mata Kuliah:</strong> ${payload.course_id}</div>
+            `;
+
+            document.getElementById('successModal').classList.add('show');
+        }
+
+        // Show Error Modal
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorModal').classList.add('show');
+        }
+
+        // Close Error Modal
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.remove('show');
+            scanning = true;
+            scanQrCode();
+        }
+
+        // Reset Scanner
+        function resetScanner() {
+            document.getElementById('successModal').classList.remove('show');
+            document.getElementById('userId').value = '';
+            generateDeviceId();
+            scanning = true;
+            scanQrCode();
+        }
+
+        // Update Status
+        function updateStatus(message) {
+            const bar = document.getElementById('statusBar');
+            bar.innerHTML = message;
+            bar.className = 'status-bar';
+        }
+
+        // Settings functions
+        function showSettings() {
+            const settingsModal = document.getElementById('settingsModal');
+            const storedId = localStorage.getItem('deploymentId');
+            document.getElementById('deploymentIdInput').value = storedId || '';
+            settingsModal.classList.add('show');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('show');
+        }
+
+        function saveDeploymentId() {
+            const deploymentId = document.getElementById('deploymentIdInput').value.trim();
+            
+            if (!deploymentId) {
+                alert('Silakan isi Deployment ID');
+                return;
+            }
+
+            localStorage.setItem('deploymentId', deploymentId);
+            API_BASE = `https://script.google.com/macros/s/${deploymentId}/exec`;
+            console.log('✓ Deployment ID saved:', deploymentId.substring(0, 20) + '...');
+            alert('✓ Deployment ID tersimpan!');
+            closeSettings();
+        }
+
+        // Initialize
+        initDeploymentId();
+        generateDeviceId();
+        startAccelMonitoring();
+        
+        // Wait for jsQR to load, then init camera
+        function waitForJsQR() {
+            if (typeof jsQR === 'undefined') {
+                console.log('⏳ Waiting for jsQR library...');
+                setTimeout(waitForJsQR, 100);
+            } else {
+                console.log('✓ jsQR library loaded!');
+                window.addEventListener('load', initCamera);
+                initCamera(); // Try to init immediately in case already loaded
+            }
+        }
+        
+        waitForJsQR();
+    </script>
+</body>
+</html>

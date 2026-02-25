@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telemetry API Tester</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+    * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    }
+
+    body {
+    font-family: Inter, system-ui, sans-serif;
+    background: #f4f6f8;
+    padding: 30px;
+    }
+
+    .container {
+    max-width: 1000px;
+    margin: auto;
+    }
+
+    header {
+    text-align: center;
+    margin-bottom: 30px;
+    }
+
+    header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    }
+
+    header p {
+    color: #666;
+    }
+
+    .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(320px,1fr));
+    gap: 20px;
+    }
+
+    .card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    }
+
+    .card h2 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    }
+
+    label {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 4px;
+    display:block;
+    }
+
+    input,select,textarea {
+    width:100%;
+    padding:10px;
+    border-radius:6px;
+    border:1px solid #ddd;
+    margin-bottom:12px;
+    }
+
+    select {
+    appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg fill='gray' height='20' viewBox='0 0 20 20' width='20' xmlns='http://www.w3.org/2000/svg'><polygon points='5,7 10,12 15,7'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    }
+
+    button {
+    background:#2563eb;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:6px;
+    cursor:pointer;
+    }
+
+    button:hover {
+    opacity:.9;
+    }
+
+    .button-group {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    }
+
+    .response {
+    background:#f8fafc;
+    padding:10px;
+    border-radius:6px;
+    font-size:12px;
+    max-height:250px;
+    overflow:auto;
+    }
+
+    .status {
+    margin-top:10px;
+    font-size:13px;
+    }
+
+    .status.success {color:green;}
+    .status.error {color:red;}
+
+    .qr-display {
+    margin-top:20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    }
+
+    .qr-display canvas {
+    display:block;
+    margin:20px auto;
+    border:8px solid #fff;
+    border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .qr-info {
+    text-align:center;
+    margin-top:6px;
+    }
+
+    .info-box {
+    background:#fff;
+    border:1px solid #ddd;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:20px;
+    }
+
+    .full-width {grid-column:1/-1;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="logo.png"
+                alt="Logo Universitas Airlangga" 
+                style="height:60px; margin-bottom:12px;">
+            <h1>Universitas Airlangga</h1>
+            <p>Presensi QR Generator</p>
+        </header>
+
+        <div class="info-box">
+            <strong>Konfigurasi</strong> <!-- Ganti <code>YOUR_DEPLOYMENT_ID</code> di console browser atau di sini: -->
+            <input type="text" id="deploymentId" placeholder="Deployment ID" style="margin-top: 10px;">
+        </div>
+
+        <!-- COURSE SELECTION FLOW -->
+        <div id="courseFlow" class="grid" style="display: grid;">
+            <div class="card full-width">
+                <h2>Pilih Mata Kuliah</h2>
+                
+                <div class="form-group">
+                    <label>Mata Kuliah:</label>
+                    <select id="courseSelect">
+                        <option value="">-- Pilih Mata Kuliah --</option>
+                        <option value="cloud-101">Cloud Computing 101</option>
+                    </select>
+                </div>
+
+                <div>
+                    <button style="width:100%;" onclick="nextToGenerate()">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOKEN GENERATION FLOW -->
+        <div id="tokenFlow" style="display: none; grid-column: 1 / -1;">
+            <div class="card full-width">
+                <h2>Generate QR Token</h2>
+                
+                <div class="form-group">
+                    <label>Mata Kuliah Terpilih:</label>
+                    <input type="text" id="selectedCourse" disabled placeholder="Cloud Computing 101">
+                </div>
+
+                <div class="form-group">
+                    <label>Session ID:</label>
+                    <input type="text" id="sessionIdGen" value="session-01" placeholder="sesi-01">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="generateQrTokenNew()">Generate QR</button>
+                    <button onclick="backToCourse()" style="background: #999;">Back</button>
+                </div>
+
+                <div id="tokenStatus" class="status"></div>
+                <div id="tokenQrDisplay" class="qr-display"></div>
+                <!-- <div id="tokenResponse" class="response"></div> -->
+            </div>
+        </div>
+
+        <div id="presenceCard" class="card full-width" style="margin-top:20px">
+            <h2>Cek Status Presensi Mahasiswa</h2>
+
+            <label>User ID</label>
+            <input type="text" id="statusUserId" placeholder="User ID Mahasiswa">
+
+            <button onclick="checkPresenceStatus()">Cek Status</button>
+
+            <div id="presenceStatusResult" class="response"></div>
+        </div>
+
+        <!-- TESTING CARDS (visible setelah token digenerate) -->
+        <div id="testingCards" class="grid" style="display: none; margin-top: 30px;">
+            <h2 style="grid-column:1/-1;color:#333;margin-bottom:10px;">Testing Telemetry & GPS</h2>
+            
+            <!-- ACCELEROMETER CARD -->
+            <div class="card">
+                <h2>Accelerometer API</h2>
+                
+                <div class="form-group">
+                    <label>Device ID:</label>
+                    <input type="text" id="accelDeviceId" value="dev-001" placeholder="dev-001">
+                </div>
+                
+                <div class="form-group">
+                    <label>X Axis:</label>
+                    <input type="number" id="accelX" value="0.12" step="0.01" placeholder="0.12">
+                </div>
+                
+                <div class="form-group">
+                    <label>Y Axis:</label>
+                    <input type="number" id="accelY" value="0.01" step="0.01" placeholder="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label>Z Axis:</label>
+                    <input type="number" id="accelZ" value="9.70" step="0.01" placeholder="9.70">
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="sendAccel()">Send</button>
+                    <button onclick="getLatestAccel()">Get Latest</button>
+                </div>
+                
+                <div id="accelStatus" class="status"></div>
+                <div id="accelResponse" class="response"></div>
+            </div>
+
+            <!-- GPS CARD -->
+            <div class="card">
+                <h2>GPS API</h2>
+                
+                <div class="form-group">
+                    <label>Device ID:</label>
+                    <input type="text" id="gpsDeviceId" value="dev-001" placeholder="dev-001">
+                </div>
+                
+                <div class="form-group">
+                    <label>Latitude:</label>
+                    <input type="number" id="gpsLat" value="-7.2575" step="0.00001" placeholder="-7.2575">
+                </div>
+                
+                <div class="form-group">
+                    <label>Longitude:</label>
+                    <input type="number" id="gpsLng" value="112.7521" step="0.00001" placeholder="112.7521">
+                </div>
+                
+                <div class="form-group">
+                    <label>Accuracy (m):</label>
+                    <input type="number" id="gpsAccuracy" value="12.5" step="0.1" placeholder="12.5">
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="sendGps()">Send</button>
+                    <button onclick="getLatestGps()">Get Latest</button>
+                </div>
+                
+                <div id="gpsStatus" class="status"></div>
+                <div id="gpsResponse" class="response"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Configuration
+        let API_BASE = null;
+
+        // Initialize deployment ID
+        document.getElementById('deploymentId').addEventListener('change', (e) => {
+            const id = e.target.value.trim();
+            if (id) {
+                API_BASE = `https://script.google.com/macros/s/${id}/exec`;
+                console.log('API Base URL updated:', API_BASE);
+            }
+        });
+
+        // Check if deployment ID is in URL or localStorage
+        function initDeploymentId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id') || localStorage.getItem('deploymentId');
+            
+            if (id) {
+                document.getElementById('deploymentId').value = id;
+                API_BASE = `https://script.google.com/macros/s/${id}/exec`;
+            }
+        }
+
+        // Helper: Show status
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `status show ${type}`;
+            
+            if (type === 'success') {
+                setTimeout(() => el.classList.remove('show'), 3000);
+            }
+        }
+
+        // Helper: Show response
+        function showResponse(elementId, data, isError = false) {
+            const el = document.getElementById(elementId);
+            el.textContent = JSON.stringify(data, null, 2);
+            el.className = `response ${isError ? 'error' : 'success'}`;
+        }
+
+        // FLOW FUNCTIONS
+        function nextToGenerate() {
+            const course = document.getElementById('courseSelect').value;
+            
+            if (!course) {
+                alert('Silakan pilih Matkul terlebih dahulu');
+                return;
+            }
+
+            // Update selected course display
+            const courseNames = {
+                'cloud-101': 'Cloud Computing 101'
+            };
+
+            document.getElementById('selectedCourse').value = courseNames[course];
+
+            // Show token flow
+            document.getElementById('courseFlow').style.display = 'none';
+            document.getElementById('tokenFlow').style.display = 'block';
+            document.getElementById('backBtn').style.display = 'block';
+        }
+
+        function backToCourse() {
+            document.getElementById('courseFlow').style.display = 'grid';
+            document.getElementById('tokenFlow').style.display = 'none';
+            document.getElementById('testingCards').style.display = 'none';
+            document.getElementById('courseSelect').value = '';
+        }
+
+        // Generate QR Token (NEW)
+        async function generateQrTokenNew() {
+            if (!API_BASE) {
+                showStatus('tokenStatus', 'Please set Deployment ID first', 'error');
+                return;
+            }
+
+            const course = document.getElementById('courseSelect').value;
+            const sessionId = document.getElementById('sessionIdGen').value;
+
+            const payload = {
+                course_id: course,
+                session_id: sessionId,
+                ts: new Date().toISOString()
+            };
+
+            try {
+                showStatus('tokenStatus', 'Loading...', 'success');
+                
+                const response = await fetch(API_BASE + '?action=presence/qr/generate', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    const token = data.data.qr_token;
+                    const expiresAt = data.data.expires_at;
+                    
+                    // Display QR code
+                    const qrDiv = document.getElementById('tokenQrDisplay');
+                    qrDiv.innerHTML = '';
+                    qrDiv.classList.add('show');
+                    
+                    new QRCode(qrDiv, {
+                        text: token,
+                        width: 256,
+                        height: 256,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    
+                    const info = document.createElement('div');
+                    info.className = 'qr-info';
+                    info.innerHTML = `
+                    <div style="margin-top:10px;font-size:13px;">
+                    <div><strong>Token:</strong> ${token}</div>
+                    <div><strong>Expires:</strong> ${expiresAt}</div>
+                    <div style="margin-top:6px;color:#555;">Scan QR ini untuk presensi di Mobile</div>
+                    </div>
+                    `;
+                    qrDiv.appendChild(info);
+                    
+                    // showResponse('tokenResponse', data, false);
+                    showStatus('tokenStatus', '✓ QR Generated! Expires in 2 minutes', 'success');
+                    document.getElementById('presenceCard').style.display = 'block';
+                    document.getElementById('presenceStatusResult').innerHTML = '';
+                    
+                    // Show testing cards
+                    setTimeout(() => {
+                        document.getElementById('testingCards').style.display = 'grid';
+                    }, 500);
+                } else {
+                    showResponse('tokenResponse', data, true);
+                    showStatus('tokenStatus', '✗ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showResponse('tokenResponse', { error: error.message }, true);
+                showStatus('tokenStatus', '✗ ' + error.message, 'error');
+            }
+        }
+
+        async function checkPresenceStatus() {
+        if (!API_BASE) {
+            alert('Deployment ID belum diisi');
+            return;
+        }
+
+        const userId = document.getElementById('statusUserId').value.trim();
+
+        if (!userId) {
+            alert('Isi User ID dulu');
+            return;
+        }
+
+        const courseId = document.getElementById('courseSelect').value || 'cloud-101';
+        const sessionId = document.getElementById('sessionIdGen').value || 'session-01';
+
+        try {
+            const res = await fetch(
+            API_BASE +
+                `?action=presence/status&user_id=${userId}&course_id=${courseId}&session_id=${sessionId}`
+            );
+
+            const data = await res.json();
+
+            const box = document.getElementById('presenceStatusResult');
+
+            if (data.ok) {
+            box.innerHTML = `
+            <div><strong>Status:</strong> ${data.data.status}</div>
+            <div><strong>Waktu:</strong> ${new Date(data.data.last_ts).toLocaleString()}</div>
+            `;
+            } else {
+            box.innerHTML = '❌ ' + data.error;
+            }
+
+        } catch (e) {
+            document.getElementById('presenceStatusResult').innerHTML = e.message;
+        }
+        }
+
+        // ACCELEROMETER FUNCTIONS
+        async function sendAccel() {
+            if (!API_BASE) {
+                showStatus('accelStatus', 'Please set Deployment ID first', 'error');
+                return;
+            }
+
+            const payload = {
+                device_id: document.getElementById('accelDeviceId').value,
+                ts: new Date().toISOString(),
+                samples: [{
+                    t: new Date().toISOString(),
+                    x: parseFloat(document.getElementById('accelX').value),
+                    y: parseFloat(document.getElementById('accelY').value),
+                    z: parseFloat(document.getElementById('accelZ').value)
+                }]
+            };
+
+            try {
+                showStatus('accelStatus', 'Sending... <span class="loading"></span>', 'success');
+                
+                const response = await fetch(API_BASE + '?action=telemetry/accel', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                if (data.ok) {
+                    showResponse('accelResponse', data, false);
+                    showStatus('accelStatus', '✓ Data sent successfully!', 'success');
+                } else {
+                    showResponse('accelResponse', data, true);
+                    showStatus('accelStatus', '✗ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showResponse('accelResponse', { error: error.message }, true);
+                showStatus('accelStatus', '✗ ' + error.message, 'error');
+            }
+        }
+
+        async function getLatestAccel() {
+            if (!API_BASE) {
+                showStatus('accelStatus', 'Please set Deployment ID first', 'error');
+                return;
+            }
+
+            const deviceId = document.getElementById('accelDeviceId').value;
+
+            try {
+                showStatus('accelStatus', 'Fetching... <span class="loading"></span>', 'success');
+                
+                const response = await fetch(API_BASE + '?action=telemetry/accel/latest&device_id=' + deviceId);
+                const data = await response.json();
+
+                if (data.ok) {
+                    showResponse('accelResponse', data, false);
+                    showStatus('accelStatus', '✓ Data retrieved!', 'success');
+                } else {
+                    showResponse('accelResponse', data, true);
+                    showStatus('accelStatus', '✗ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showResponse('accelResponse', { error: error.message }, true);
+                showStatus('accelStatus', '✗ ' + error.message, 'error');
+            }
+        }
+
+        // GPS FUNCTIONS
+        async function sendGps() {
+            if (!API_BASE) {
+                showStatus('gpsStatus', 'Please set Deployment ID first', 'error');
+                return;
+            }
+
+            const payload = {
+                device_id: document.getElementById('gpsDeviceId').value,
+                ts: new Date().toISOString(),
+                lat: parseFloat(document.getElementById('gpsLat').value),
+                lng: parseFloat(document.getElementById('gpsLng').value),
+                accuracy_m: parseFloat(document.getElementById('gpsAccuracy').value)
+            };
+
+            try {
+                showStatus('gpsStatus', 'Sending... <span class="loading"></span>', 'success');
+                
+                const response = await fetch(API_BASE + '?action=telemetry/gps', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    showResponse('gpsResponse', data, false);
+                    showStatus('gpsStatus', '✓ Location sent!', 'success');
+                } else {
+                    showResponse('gpsResponse', data, true);
+                    showStatus('gpsStatus', '✗ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showResponse('gpsResponse', { error: error.message }, true);
+                showStatus('gpsStatus', '✗ ' + error.message, 'error');
+            }
+        }
+
+        async function getLatestGps() {
+            if (!API_BASE) {
+                showStatus('gpsStatus', 'Please set Deployment ID first', 'error');
+                return;
+            }
+
+            const deviceId = document.getElementById('gpsDeviceId').value;
+
+            try {
+                showStatus('gpsStatus', 'Fetching... <span class="loading"></span>', 'success');
+                
+                const response = await fetch(API_BASE + '?action=telemetry/gps/latest&device_id=' + deviceId);
+                const data = await response.json();
+
+                if (data.ok) {
+                    showResponse('gpsResponse', data, false);
+                    showStatus('gpsStatus', '✓ Data retrieved!', 'success');
+                } else {
+                    showResponse('gpsResponse', data, true);
+                    showStatus('gpsStatus', '✗ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showResponse('gpsResponse', { error: error.message }, true);
+                showStatus('gpsStatus', '✗ ' + error.message, 'error');
+            }
+        }
+
+        // Initialize
+        initDeploymentId();
+    </script>
+</body>
+</html>
