@@ -1,0 +1,179 @@
+openapi: 3.0.3
+info:
+  title: Cloud Computing Project API
+  description: >
+    API untuk Presensi QR Dinamis, Telemetry Accelerometer, dan GPS Tracking.
+  version: 1.0.0
+
+servers:
+  - url: https://script.google.com/macros/s/AKfycbyHS84TjZWi1S1d-qK6SHawbYFlQENIrKh7mG5TbZbJs-hgebyqvrYXhvjn6E7QPqSY7A/exec
+    description: Google Apps Script Web App
+
+paths:
+
+  /presence/qr/generate:
+    post:
+      summary: Generate QR Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - course_id
+                - session_id
+                - ts
+              properties:
+                course_id:
+                  type: string
+                session_id:
+                  type: string
+                ts:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: QR token generated
+          
+  /presence/checkin:
+    post:
+      summary: Check-in dengan QR Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - device_id
+                - course_id
+                - session_id
+                - qr_token
+                - ts
+              properties:
+                user_id:
+                  type: string
+                device_id:
+                  type: string
+                course_id:
+                  type: string
+                session_id:
+                  type: string
+                qr_token:
+                  type: string
+                ts:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Check-in result
+
+  /presence/status:
+    get:
+      summary: Cek Status Presensi
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: course_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: session_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status presensi
+
+  /telemetry/accel:
+    post:
+      summary: Kirim Data Accelerometer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: string
+                ts:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Data tersimpan
+
+  /telemetry/accel/latest:
+    get:
+      summary: Ambil Data Accelerometer Terbaru
+      parameters:
+        - in: query
+          name: device_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Data terbaru
+
+  /telemetry/gps:
+    post:
+      summary: Log GPS Point
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: string
+                lat:
+                  type: number
+                lng:
+                  type: number
+                accuracy_m:
+                  type: number
+      responses:
+        '200':
+          description: GPS tersimpan
+
+  /telemetry/gps/latest:
+    get:
+      summary: Ambil GPS Terbaru
+      parameters:
+        - in: query
+          name: device_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: GPS terbaru
+
+  /telemetry/gps/history:
+    get:
+      summary: Ambil Riwayat GPS
+      parameters:
+        - in: query
+          name: device_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Riwayat GPS
