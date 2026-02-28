@@ -13,7 +13,6 @@ servers:
     description: Google Apps Script Web App
 
 paths:
-
   /presence/qr/generate:
     post:
       summary: Generate QR Token
@@ -39,7 +38,7 @@ paths:
                   type: string
                   format: date-time
       responses:
-        '200':
+        "200":
           description: QR Token generated successfully
           content:
             application/json:
@@ -96,7 +95,7 @@ paths:
                   type: string
                   format: date-time
       responses:
-        '200':
+        "200":
           description: Check-in result
 
   /presence/status:
@@ -120,7 +119,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Status presensi
 
   /telemetry/accel:
@@ -155,7 +154,7 @@ paths:
                       z:
                         type: number
       responses:
-        '200':
+        "200":
           description: Accelerometer data stored
 
   /telemetry/accel/latest:
@@ -169,7 +168,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Latest accelerometer data
 
   /telemetry/gps:
@@ -198,7 +197,7 @@ paths:
                   type: number
                   example: 12.5
       responses:
-        '200':
+        "200":
           description: GPS point stored
 
   /telemetry/gps/latest:
@@ -212,7 +211,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Latest GPS marker
 
   /telemetry/gps/history:
@@ -232,5 +231,5 @@ paths:
             type: integer
             example: 200
       responses:
-        '200':
+        "200":
           description: GPS history list
