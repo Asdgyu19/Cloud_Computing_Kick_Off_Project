@@ -1,22 +1,26 @@
 openapi: 3.0.3
 info:
   title: Cloud Computing Project API
-  description: |
-    API untuk:
-    - Presensi QR Dinamis
-    - Telemetry Accelerometer
-    - GPS Tracking
   version: 1.0.0
+  description: API Presensi QR, Telemetry Accelerometer, GPS Tracking
 
 servers:
   - url: https://script.google.com/macros/s/AKfycbyHS84TjZWi1S1d-qK6SHawbYFlQENIrKh7mG5TbZbJs-hgebyqvrYXhvjn6E7QPqSY7A/exec
     description: Google Apps Script Web App
 
 paths:
-  /presence/qr/generate:
+
+  /:
     post:
       summary: Generate QR Token
       tags: [Presensi]
+      parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            example: presence/qr/generate
       requestBody:
         required: true
         content:
@@ -40,69 +44,18 @@ paths:
       responses:
         "200":
           description: QR Token generated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      qr_token:
-                        type: string
-                        example: TKN-8F2A19
-                      expires_at:
-                        type: string
-                        format: date-time
 
-  /presence/checkin:
-    post:
-      summary: Check-in dengan QR Token
-      tags: [Presensi]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - user_id
-                - device_id
-                - course_id
-                - session_id
-                - qr_token
-                - ts
-              properties:
-                user_id:
-                  type: string
-                  example: 2023001
-                device_id:
-                  type: string
-                  example: dev-001
-                course_id:
-                  type: string
-                  example: cloud-101
-                session_id:
-                  type: string
-                  example: sesi-02
-                qr_token:
-                  type: string
-                  example: TKN-8F2A19
-                ts:
-                  type: string
-                  format: date-time
-      responses:
-        "200":
-          description: Check-in result
-
-  /presence/status:
+  /status:
     get:
       summary: Cek Status Presensi
       tags: [Presensi]
       parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            example: presence/status
         - in: query
           name: user_id
           required: true
@@ -126,6 +79,13 @@ paths:
     post:
       summary: Kirim Data Accelerometer (Batch)
       tags: [Telemetry]
+      parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            example: telemetry/accel
       requestBody:
         required: true
         content:
@@ -157,11 +117,17 @@ paths:
         "200":
           description: Accelerometer data stored
 
-  /telemetry/accel/latest:
+  /accel/latest:
     get:
       summary: Ambil Data Accelerometer Terbaru
       tags: [Telemetry]
       parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            example: telemetry/accel/latest
         - in: query
           name: device_id
           required: true
@@ -171,10 +137,17 @@ paths:
         "200":
           description: Latest accelerometer data
 
-  /telemetry/gps:
+  /gps:
     post:
       summary: Log GPS Point
       tags: [GPS]
+      parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            example: telemetry/gps
       requestBody:
         required: true
         content:
@@ -200,11 +173,17 @@ paths:
         "200":
           description: GPS point stored
 
-  /telemetry/gps/latest:
+  /gps/latest:
     get:
-      summary: Ambil GPS Terbaru (Marker)
+      summary: Ambil GPS Terbaru
       tags: [GPS]
       parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            example: telemetry/gps/latest
         - in: query
           name: device_id
           required: true
@@ -214,11 +193,17 @@ paths:
         "200":
           description: Latest GPS marker
 
-  /telemetry/gps/history:
+  /gps/history:
     get:
-      summary: Ambil GPS History (Polyline)
+      summary: Ambil GPS History
       tags: [GPS]
       parameters:
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            example: telemetry/gps/history
         - in: query
           name: device_id
           required: true
