@@ -1,30 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cloud Computing API Documentation</title>
   <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+  <link rel="icon" type="image/png" href="https://fastapi.tiangolo.com/img/favicon.png" />
   <style>
+    html {
+      box-sizing: border-box;
+      overflow: -moz-scrollbars-vertical;
+      overflow-y: scroll;
+    }
+    *,
+    *:before,
+    *:after {
+      box-sizing: inherit;
+    }
     body {
       margin: 0;
-      background-color: #f5f5f5;
+      padding: 0;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e8eef5 100%);
+      min-height: 100vh;
+      font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+    }
+    .topbar {
+      background: linear-gradient(90deg, #003d82 0%, #0052a3 100%);
+      padding: 25px 30px;
+      border-bottom: 4px solid #00a8e8;
+      box-shadow: 0 2px 8px rgba(0, 61, 130, 0.15);
+    }
+    .topbar-title {
+      color: #ffffff;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 0.5px;
+    }
+    .topbar-subtitle {
+      color: #b3d9f2;
+      font-size: 14px;
+      margin: 8px 0 0 0;
+      font-weight: 500;
+    }
+    .swagger-ui {
+      background: #ffffff !important;
+    }
+    .swagger-ui .topbar {
+      display: none;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 25px auto;
+      padding: 0 15px;
+      background: white;
+      border-radius: 6px;
+      box-shadow: 0 4px 15px rgba(0, 61, 130, 0.12);
+      overflow: hidden;
+      border-top: 5px solid #003d82;
+    }
+    .swagger-ui .info .title {
+      color: #003d82 !important;
+      border-bottom: 2px solid #00a8e8;
+      padding-bottom: 10px;
+    }
+    .swagger-ui .scheme-container {
+      background: #f5f8fc;
+      border-bottom: 1px solid #d1e0f0;
+    }
+    .swagger-ui .btn {
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+    .swagger-ui .btn-try-out {
+      background-color: #0052a3;
+      border-color: #0052a3;
+      color: white;
+    }
+    .swagger-ui .btn-try-out:hover {
+      background-color: #003d82;
+      border-color: #003d82;
+    }
+    .swagger-ui .execute-wrapper .btn-execute {
+      background-color: #00a8e8;
+      border-color: #00a8e8;
+      color: white;
+    }
+    .swagger-ui .execute-wrapper .btn-execute:hover {
+      background-color: #0088b4;
+      border-color: #0088b4;
+    }
+    .swagger-ui .opblock.opblock-get {
+      border-color: #0052a3;
+    }
+    .swagger-ui .opblock.opblock-get .opblock-summary {
+      border-left: 4px solid #0052a3;
+    }
+    .swagger-ui .opblock.opblock-post {
+      border-color: #00a8e8;
+    }
+    .swagger-ui .opblock.opblock-post .opblock-summary {
+      border-left: 4px solid #00a8e8;
+    }
+    .swagger-ui .tag {
+      color: #003d82;
+    }
+    .swagger-ui .tag-item {
+      background: #e8f1f8;
+      border-left: 3px solid #0052a3;
     }
   </style>
 </head>
 <body>
-  <div id="swagger-ui"></div>
+  <div class="topbar">
+    <h1 class="topbar-title">Cloud Computing Project - API Documentation</h1>
+    <p class="topbar-subtitle">Dokumentasi Teknis | Presensi QR | Telemetry | GPS Tracking</p>
+  </div>
+
+  <div class="container">
+    <div id="swagger-ui"></div>
+  </div>
 
   <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js"></script>
   <script>
     window.onload = function () {
       SwaggerUIBundle({
-        url: "openapi.yaml",   // pastikan file ini ada di folder yang sama
+        url: "https://raw.githubusercontent.com/Asdgyu19/Cloud_Computing_Kick_Off_Project/main/openapi.yaml",
         dom_id: "#swagger-ui",
         deepLinking: true,
         presets: [
           SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
         ],
-        layout: "BaseLayout"
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "BaseLayout",
+        defaultModelsExpandDepth: 1,
+        defaultModelExpandDepth: 1,
+        requestInterceptor: (request) => {
+          console.log("Request:", request);
+          return request;
+        },
+        responseInterceptor: (response) => {
+          console.log("Response:", response);
+          return response;
+        }
       });
     };
   </script>
